@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct CroVec<T> {
-    data: *mut T,
-    size: usize,
+    pub(crate) data: *mut T,
+    pub(crate) size: usize,
     cap: usize,
 }
 

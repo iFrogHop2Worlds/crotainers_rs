@@ -1,3 +1,3 @@
 pub(crate) mod vec;
-mod vec_deque;
-mod linked_list;
+pub(crate) mod vec_deque;
+pub(crate) mod linked_list;
