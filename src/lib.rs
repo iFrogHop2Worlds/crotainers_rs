@@ -1,5 +1,5 @@
 mod etc;
-pub mod maps;
+mod maps;
 mod sequences;
 mod sets;
 
@@ -7,7 +7,13 @@ mod sets;
 #[cfg(test)]
 mod tests {
 
-    use crate::sequences::{vec::CroVec, vec_deque::CroQue, linked_list::CroLList};
+    use crate::sequences::{
+        CroVec,
+        CroQue,
+        CroLList
+    };
+
+    use crate::maps::{CroMap};
     #[test]
     fn test_new_crovec() {
         let vec: CroVec<i32> = CroVec::new();
@@ -92,6 +98,7 @@ mod tests {
         drop(vec);
     }
 
+    // double ended que
     #[test]
     fn test_croque_basic() {
         let mut deque = CroQue::new();
@@ -132,6 +139,8 @@ mod tests {
         assert_eq!(deque.pop_front(), None);
         assert_eq!(deque.pop_back(), None);
     }
+
+    // linked list
 
     #[test]
     fn test_new_crollist() {
@@ -215,5 +224,163 @@ mod tests {
         }
 
         assert_eq!(iter_values, vec![1, 2, 3]);
+    }
+
+    // hashmap
+    #[test]
+    fn test_new_map_is_empty() {
+        let map: CroMap<i32, String> = CroMap::new();
+        assert!(map.is_empty());
+        assert_eq!(map.size(), 0);
+    }
+
+    #[test]
+    fn test_basic_insert_and_get() {
+        let mut map = CroMap::new();
+        map.insert("test", 42);
+        assert_eq!(map.get(&"test"), Some(&42));
+        assert_eq!(map.size(), 1);
+    }
+
+    #[test]
+    fn test_update_existing_key() {
+        let mut map = CroMap::new();
+        map.insert("key", 100);
+        assert_eq!(map.insert("key", 200), Some(100));
+        assert_eq!(map.get(&"key"), Some(&200));
+        assert_eq!(map.size(), 1);
+    }
+
+    #[test]
+    fn test_remove() {
+        let mut map = CroMap::new();
+        map.insert("key", 42);
+        assert_eq!(map.remove(&"key"), Some(42));
+        assert!(map.is_empty());
+        assert_eq!(map.get(&"key"), None);
+    }
+
+    #[test]
+    fn test_remove_nonexistent() {
+        let mut map: CroMap<&str, i32> = CroMap::new();
+        assert_eq!(map.remove(&"nonexistent"), None);
+    }
+
+    #[test]
+    fn test_multiple_operations() {
+        let mut map = CroMap::new();
+
+        map.insert("a", 1);
+        map.insert("b", 2);
+        map.insert("c", 3);
+
+        assert_eq!(map.get(&"a"), Some(&1));
+        assert_eq!(map.get(&"b"), Some(&2));
+        assert_eq!(map.get(&"c"), Some(&3));
+        assert_eq!(map.size(), 3);
+
+        assert_eq!(map.remove(&"b"), Some(2));
+        assert_eq!(map.size(), 2);
+
+        assert_eq!(map.get(&"a"), Some(&1));
+        assert_eq!(map.get(&"b"), None);
+        assert_eq!(map.get(&"c"), Some(&3));
+
+        map.insert("b", 4);
+        assert_eq!(map.get(&"b"), Some(&4));
+    }
+
+    #[test]
+    fn test_resize_behavior() {
+        let mut map = CroMap::new();
+
+        for i in 0..10 {
+            map.insert(i, i * 10);
+        }
+
+        for i in 0..10 {
+            assert_eq!(map.get(&i), Some(&(i * 10)));
+        }
+        assert_eq!(map.size(), 10);
+    }
+
+    #[test]
+    fn test_insert_after_remove() {
+        let mut map = CroMap::new();
+
+        map.insert("key", 1);
+        map.remove(&"key");
+
+        map.insert("key", 2);
+        assert_eq!(map.get(&"key"), Some(&2));
+        assert_eq!(map.size(), 1);
+    }
+
+    #[test]
+    fn test_complex_collision_scenario() {
+        let mut map = CroMap::new();
+
+        let items = vec![
+            ("abc", 1),
+            ("bac", 2),
+            ("cba", 3),
+            ("acb", 4),
+        ];
+
+        for (k, v) in items.iter() {
+            map.insert(*k, *v);
+        }
+
+        for (k, v) in items.iter() {
+            assert_eq!(map.get(k), Some(v));
+        }
+
+        map.remove(&"bac");
+        map.remove(&"acb");
+
+        assert_eq!(map.get(&"abc"), Some(&1));
+        assert_eq!(map.get(&"cba"), Some(&3));
+        assert_eq!(map.get(&"bac"), None);
+        assert_eq!(map.get(&"acb"), None);
+
+        map.insert("bac", 5);
+        assert_eq!(map.get(&"bac"), Some(&5));
+    }
+
+    #[test]
+    fn test_large_number_of_operations() {
+        let mut map = CroMap::new();
+        let num_operations = 1000;
+
+        for i in 0..num_operations {
+            map.insert(i, i * 2);
+        }
+
+        assert_eq!(map.size(), num_operations);
+
+        for i in 0..num_operations {
+            assert_eq!(map.get(&i), Some(&(i * 2)));
+        }
+
+        for i in 0..num_operations/2 {
+            assert_eq!(map.remove(&i), Some(i * 2));
+        }
+
+        assert_eq!(map.size(), num_operations/2);
+        for i in num_operations/2..num_operations {
+            assert_eq!(map.get(&i), Some(&(i * 2)));
+        }
+    }
+
+    #[test]
+    fn test_edge_cases() {
+        let mut map: CroMap<String, i32> = CroMap::new();
+
+        map.insert(String::new(), 1);
+        assert_eq!(map.get(&String::new()), Some(&1));
+
+        let long_key = "a".repeat(1000);
+        map.insert(long_key.clone(), 2);
+        assert_eq!(map.get(&long_key), Some(&2));
     }
 }
