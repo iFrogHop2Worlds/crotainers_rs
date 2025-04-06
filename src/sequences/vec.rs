@@ -1,8 +1,25 @@
-#[derive(Debug)]
+use std::ops::{Index, IndexMut};
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CroVec<T> {
     pub(crate) data: *mut T,
     pub(crate) size: usize,
     cap: usize,
+}
+
+impl<T> Index<usize> for CroVec<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        assert!(index < self.size, "Index out of bounds");
+        unsafe { &*self.data.add(index) }
+    }
+}
+
+impl<T> IndexMut<usize> for CroVec<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        assert!(index < self.size, "Index out of bounds");
+        unsafe { &mut *self.data.add(index) }
+    }
 }
 
 impl<T> CroVec<T> {
@@ -42,6 +59,33 @@ impl<T> CroVec<T> {
 
     pub fn is_empty(&self) -> bool {
         self.size == 0
+    }
+
+    pub fn insert(&mut self, index: usize, value: T) {
+        // Ensure index is valid
+        assert!(index <= self.size, "Index out of bounds for insertion");
+
+        // Ensure we have enough capacity
+        if self.size == self.cap {
+            let new_cap = if self.cap == 0 { 1 } else { self.cap * 2 };
+            self.reserve(new_cap);
+        }
+
+        unsafe {
+            // Shift elements to the right to make space for the new element
+            if index < self.size {
+                std::ptr::copy(
+                    self.data.add(index),        // source
+                    self.data.add(index + 1),    // destination
+                    self.size - index            // number of elements to move
+                );
+            }
+
+            // Write the new element
+            std::ptr::write(self.data.add(index), value);
+        }
+
+        self.size += 1;
     }
 
     pub fn push(&mut self, value: T) {

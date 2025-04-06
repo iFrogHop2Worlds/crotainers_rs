@@ -13,7 +13,7 @@ mod tests {
         CroLList
     };
 
-    use crate::maps::{CroMap};
+    use crate::maps::{CroBTree, CroMap};
     #[test]
     fn test_new_crovec() {
         let vec: CroVec<i32> = CroVec::new();
@@ -382,5 +382,145 @@ mod tests {
         let long_key = "a".repeat(1000);
         map.insert(long_key.clone(), 2);
         assert_eq!(map.get(&long_key), Some(&2));
+    }
+
+    //btreemap
+    fn create_test_tree() -> CroBTree<i32, &'static str> {
+        let mut tree = CroBTree::new();
+        tree.insert(10, "ten");
+        tree.insert(20, "twenty");
+        tree.insert(5, "five");
+        tree
+    }
+
+    #[test]
+    fn test_new_and_empty() {
+        let tree: CroBTree<i32, &str> = CroBTree::new();
+        assert!(tree.is_empty());
+        assert_eq!(tree.len(), 0);
+    }
+
+    #[test]
+    fn test_custom_order() {
+        let tree = CroBTree::<i32, &str>::with_order(4);
+        assert_eq!(tree.len(), 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "B-tree order must be at least 3")]
+    fn test_invalid_order() {
+        CroBTree::<i32, &str>::with_order(2);
+    }
+
+    #[test]
+    fn test_insert_and_get() {
+        let mut tree = CroBTree::new();
+
+        assert_eq!(tree.insert(1, "one"), None);
+        assert_eq!(tree.insert(2, "two"), None);
+        assert_eq!(tree.len(), 2);
+
+        assert_eq!(tree.insert(1, "new one"), Some("one"));
+        assert_eq!(tree.len(), 2);
+
+        assert_eq!(tree.get(&1), Some(&"new one"));
+        assert_eq!(tree.get(&2), Some(&"two"));
+        assert_eq!(tree.get(&3), None);
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let mut tree = create_test_tree();
+
+        if let Some(value) = tree.get_mut(&10) {
+            *value = "TEN";
+        }
+
+        assert_eq!(tree.get(&10), Some(&"TEN"));
+    }
+
+    #[test]
+    fn test_contains_key() {
+        let tree = create_test_tree();
+
+        assert!(tree.contains_key(&5));
+        assert!(tree.contains_key(&10));
+        assert!(tree.contains_key(&20));
+        assert!(!tree.contains_key(&15));
+        assert!(!tree.contains_key(&0));
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut tree = create_test_tree();
+        assert!(!tree.is_empty());
+
+        tree.wipe();
+        assert!(tree.is_empty());
+        assert_eq!(tree.len(), 0);
+        assert_eq!(tree.get(&10), None);
+    }
+
+    #[test]
+    fn test_ordering() {
+        let mut tree = CroBTree::new();
+
+        tree.insert(30, "thirty");
+        tree.insert(10, "ten");
+        tree.insert(20, "twenty");
+        tree.insert(5, "five");
+        tree.insert(15, "fifteen");
+
+        assert_eq!(tree.get(&5), Some(&"five"));
+        assert_eq!(tree.get(&10), Some(&"ten"));
+        assert_eq!(tree.get(&15), Some(&"fifteen"));
+        assert_eq!(tree.get(&20), Some(&"twenty"));
+        assert_eq!(tree.get(&30), Some(&"thirty"));
+    }
+
+    #[test]
+    fn test_large_insertion() {
+        let mut tree = CroBTree::new();
+        let count = 1000;
+
+        for i in 0..count {
+            tree.insert(i, i.to_string());
+        }
+
+        assert_eq!(tree.len(), count);
+
+        for i in 0..count {
+            assert_eq!(tree.get(&i), Some(&i.to_string()));
+        }
+    }
+
+    #[test]
+    fn test_different_types() {
+        let mut string_tree: CroBTree<String, i32> = CroBTree::new();
+        string_tree.insert("hello".to_string(), 1);
+        string_tree.insert("world".to_string(), 2);
+
+        assert_eq!(string_tree.get(&"hello".to_string()), Some(&1));
+        assert_eq!(string_tree.get(&"world".to_string()), Some(&2));
+
+        let mut char_tree: CroBTree<char, bool> = CroBTree::new();
+        char_tree.insert('a', true);
+        char_tree.insert('b', false);
+
+        assert_eq!(char_tree.get(&'a'), Some(&true));
+        assert_eq!(char_tree.get(&'b'), Some(&false));
+    }
+
+    #[test]
+    fn test_edge_cases_btree() {
+        let mut tree = CroBTree::new();
+
+        tree.insert(i32::MIN, "min");
+        tree.insert(i32::MAX, "max");
+        tree.insert(0, "zero");
+
+        assert_eq!(tree.get(&i32::MIN), Some(&"min"));
+        assert_eq!(tree.get(&i32::MAX), Some(&"max"));
+        assert_eq!(tree.get(&0), Some(&"zero"));
     }
 }
