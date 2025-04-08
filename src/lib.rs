@@ -14,6 +14,7 @@ mod tests {
     };
 
     use crate::maps::{CroBTree, CroMap};
+
     #[test]
     fn test_new_crovec() {
         let vec: CroVec<i32> = CroVec::new();
@@ -89,6 +90,26 @@ mod tests {
     }
 
     #[test]
+    fn test_truncate() {
+        let mut vec = CroVec::new();
+        for i in 0..5 {
+            vec.push(i);
+        }
+
+        assert_eq!(vec.size(), 5);
+        vec.truncate(2);
+        assert_eq!(vec.size(), 2);
+        assert_eq!(vec[0], 0);
+        assert_eq!(vec[1], 1);
+
+        vec.truncate(10);
+        assert_eq!(vec.size(), 2);
+
+        vec.truncate(0);
+        assert_eq!(vec.size(), 0);
+    }
+
+    #[test]
     fn test_drop_cleanup_vec() {
         let mut vec: CroVec<String> = CroVec::new();
 
@@ -96,6 +117,122 @@ mod tests {
         vec.push(String::from("test2"));
 
         drop(vec);
+    }
+
+    #[test]
+    fn test_iter() {
+        let mut vec = CroVec::new();
+        vec.push(1);
+        vec.push(2);
+        vec.push(3);
+
+        let mut iter = vec.iter();
+        assert_eq!(iter.next(), Some(&1));
+        assert_eq!(iter.next(), Some(&2));
+        assert_eq!(iter.next(), Some(&3));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_iter_mut() {
+        let mut vec = CroVec::new();
+        vec.push(1);
+        vec.push(2);
+        vec.push(3);
+
+        for item in vec.iter_mut() {
+            *item *= 2;
+        }
+
+        assert_eq!(vec[0], 2);
+        assert_eq!(vec[1], 4);
+        assert_eq!(vec[2], 6);
+    }
+
+    #[test]
+    fn test_size_hint() {
+        let mut vec = CroVec::new();
+        vec.push(1);
+        vec.push(2);
+        vec.push(3);
+
+        let mut iter = vec.iter();
+        assert_eq!(iter.size_hint(), (3, Some(3)));
+        iter.next();
+        assert_eq!(iter.size_hint(), (2, Some(2)));
+        iter.next();
+        assert_eq!(iter.size_hint(), (1, Some(1)));
+        iter.next();
+        assert_eq!(iter.size_hint(), (0, Some(0)));
+    }
+
+    #[test]
+    fn test_sort_empty() {
+        let mut vec: CroVec<i32> = CroVec::new();
+        vec.sort();
+        assert_eq!(vec.size, 0);
+    }
+
+    #[test]
+    fn test_sort_single_element() {
+        let mut vec = CroVec::new();
+        vec.push(1);
+        vec.sort();
+        assert_eq!(vec[0], 1);
+    }
+
+    #[test]
+    fn test_sort_multiple_elements() {
+        let mut vec = CroVec::new();
+        vec.push(3);
+        vec.push(1);
+        vec.push(4);
+        vec.push(1);
+        vec.push(5);
+
+        vec.sort();
+
+        let mut prev = vec[0];
+        for i in 1..vec.size {
+            assert!(prev <= vec[i]);
+            prev = vec[i];
+        }
+    }
+
+    #[test]
+    fn test_sort_descending_order() {
+        let mut vec = CroVec::new();
+        vec.push(5);
+        vec.push(4);
+        vec.push(3);
+        vec.push(2);
+        vec.push(1);
+
+        vec.sort();
+
+        for i in 0..vec.size-1 {
+            assert!(vec[i] <= vec[i+1]);
+        }
+    }
+
+    #[test]
+    fn test_sort_with_duplicates() {
+        let mut vec = CroVec::new();
+        vec.push(3);
+        vec.push(3);
+        vec.push(1);
+        vec.push(1);
+        vec.push(2);
+        vec.push(2);
+
+        vec.sort();
+
+        assert_eq!(vec[0], 1);
+        assert_eq!(vec[1], 1);
+        assert_eq!(vec[2], 2);
+        assert_eq!(vec[3], 2);
+        assert_eq!(vec[4], 3);
+        assert_eq!(vec[5], 3);
     }
 
     // double ended que
@@ -413,13 +550,16 @@ mod tests {
     }
 
     #[test]
+    #[test]
     fn test_insert_and_get() {
         let mut tree = CroBTree::new();
 
+        // Insert should return Option<V> where None means no previous value existed
         assert_eq!(tree.insert(1, "one"), None);
         assert_eq!(tree.insert(2, "two"), None);
         assert_eq!(tree.len(), 2);
 
+        // When inserting with an existing key, returns Some with the previous value
         assert_eq!(tree.insert(1, "new one"), Some("one"));
         assert_eq!(tree.len(), 2);
 
@@ -479,18 +619,54 @@ mod tests {
     }
 
     #[test]
+    fn test_smaller_insertion() {
+        let mut tree = CroBTree::new();
+        for i in 0..1000 {
+            println!(
+                "Inserting key: {}, tree state: {:?}",
+                i,
+                tree
+            );
+            tree.insert(i, i.to_string()).expect("TODO: panic message");
+        }
+        assert_eq!(tree.len(), 1000);
+    }
+
+    #[test]
     fn test_large_insertion() {
         let mut tree = CroBTree::new();
-        let count = 1000;
+        let count:i32 = 1000;
 
         for i in 0..count {
-            tree.insert(i, i.to_string());
+            println!(
+                "Inserting key: {}, tree state: {:?}",
+                i,
+                tree
+            );
+            tree.insert(i, i.to_string()).expect("TODO: panic message");
+            println!("Tree state after insertion: {:?}", tree);
         }
 
-        assert_eq!(tree.len(), count);
+        assert_eq!(tree.len(), count as usize);
 
         for i in 0..count {
+            // Print the actual values to see the difference
+            let stored = tree.get(&i);
+            println!("Stored value: {:?}", stored);
+            println!("Expected value: {:?}", Some(&i.to_string()));
+            println!("Checking {}", i);
             assert_eq!(tree.get(&i), Some(&i.to_string()));
+        }
+    }
+
+    #[test]
+    fn test_tree_validation() {
+        let mut tree = CroBTree::new();
+
+        tree.insert(1, "one".to_string());
+
+        for i in 2..10 {
+            tree.insert(i, i.to_string());
         }
     }
 

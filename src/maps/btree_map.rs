@@ -88,7 +88,7 @@ where
             let mut new_root = Node::new(false, self.order);
             let old_root = self.root.take().unwrap();
             new_root.children.push(old_root);
-            
+
             self.root = Some(new_root);
 
             if let Some(root) = self.root.as_mut() {
@@ -97,18 +97,18 @@ where
                 let mid = (order - 1) / 2;
 
                 let mut new_node = Node::new(child.is_leaf, order);
-                
+
                 for _ in 0..(order - 1 - mid) {
                     new_node.keys.push(child.keys.pop().unwrap());
                     new_node.values.push(child.values.pop().unwrap());
                 }
-                
+
                 if !child.is_leaf {
                     for _ in 0..order - mid {
                         new_node.children.push(child.children.pop().unwrap());
                     }
                 }
-                
+
                 root.keys.insert(0, child.keys.pop().unwrap());
                 root.values.insert(0, child.values.pop().unwrap());
                 root.children.insert(1, new_node);
@@ -130,17 +130,17 @@ where
         let mut i = node.keys.size();
 
         if node.is_leaf {
-            
+
             while i > 0 && key < node.keys[i - 1] {
                 i -= 1;
             }
 
-            
+
             if i > 0 && node.keys[i - 1] == key {
                 return Some(mem::replace(&mut node.values[i - 1], value));
             }
 
-           
+
             node.keys.insert(i, key);
             node.values.insert(i, value);
             None
@@ -154,7 +154,7 @@ where
             }
 
             let child = &mut node.children[i];
-            
+
             if child.is_full(order) {
                 self.split_child(node, i);
                 if key > node.keys[i] {
@@ -171,17 +171,17 @@ where
         let mid = (self.order - 1) / 2;
 
         let mut new_node = Node::new(child.is_leaf, self.order);
-        
+
         for i in (mid + 1)..child.keys.size() {
             new_node.keys.push(child.keys[i].clone());
             new_node.values.push(child.values[i].clone());
         }
-        
+
         while child.keys.size() > mid + 1 {
             child.keys.pop();
             child.values.pop();
         }
-        
+
         if !child.is_leaf {
             for i in (mid + 1)..child.children.size() {
                 new_node.children.push(child.children[i].clone());
@@ -190,7 +190,7 @@ where
                 child.children.pop();
             }
         }
-        
+
         let mid_key = child.keys.pop().unwrap();
         let mid_value = child.values.pop().unwrap();
 
