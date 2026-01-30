@@ -46,6 +46,25 @@ where
     }
 }
 
+pub struct CroBTreeIter<'a, K, V> {
+    items: CroVec<(&'a K, &'a V)>,
+    index: usize,
+}
+
+impl<'a, K, V> Iterator for CroBTreeIter<'a, K, V> {
+    type Item = (&'a K, &'a V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.items.size() {
+            let item = self.items[self.index];
+            self.index += 1;
+            Some(*&item)
+        } else {
+            None
+        }
+    }
+}
+
 impl<K, V> CroBTree<K, V>
 where
     K: Ord + Clone,
@@ -70,6 +89,10 @@ where
 
     pub fn is_empty(&self) -> bool {
         self.length == 0
+    }
+
+    pub(crate) fn order(&self) -> usize {
+        self.order
     }
 
     pub fn wipe(&mut self) {
@@ -220,6 +243,36 @@ where
 
     pub fn contains_key(&self, key: &K) -> bool {
         self.get(key).is_some()
+    }
+
+    pub fn iter(&self) -> CroBTreeIter<'_, K, V> {
+        let mut items = CroVec::new();
+        if let Some(root) = &self.root {
+            Self::collect_in_order(root, &mut items);
+        }
+        CroBTreeIter { items, index: 0 }
+    }
+
+    fn collect_in_order<'a>(
+        node: &'a Node<K, V>,
+        out: &mut CroVec<(&'a K, &'a V)>,
+    ) {
+        let key_count = node.keys.size();
+        if node.is_leaf {
+            for i in 0..key_count {
+                out.push((&node.keys[i], &node.values[i]));
+            }
+            return;
+        }
+
+        for i in 0..key_count {
+            Self::collect_in_order(&node.children[i], out);
+            out.push((&node.keys[i], &node.values[i]));
+        }
+
+        if node.children.size() > 0 {
+            Self::collect_in_order(&node.children[key_count], out);
+        }
     }
 }
 

@@ -14,6 +14,7 @@ mod tests {
     };
 
     use crate::maps::{CroBTree, CroMap};
+    use crate::sets::CroBTreeSet;
 
     #[test]
     fn test_new_crovec() {
@@ -682,5 +683,73 @@ mod tests {
         assert_eq!(tree.get(&i32::MIN), Some(&"min"));
         assert_eq!(tree.get(&i32::MAX), Some(&"max"));
         assert_eq!(tree.get(&0), Some(&"zero"));
+    }
+
+    #[test]
+    fn test_btree_set_insert_contains() {
+        let mut set = CroBTreeSet::new();
+        assert!(set.is_empty());
+
+        assert!(set.insert(10));
+        assert!(set.insert(5));
+        assert!(!set.insert(10));
+
+        assert!(set.contains(&10));
+        assert!(set.contains(&5));
+        assert!(!set.contains(&7));
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    #[should_panic(expected = "B-tree order must be at least 3")]
+    fn test_btree_set_invalid_order() {
+        CroBTreeSet::<i32>::with_order(2);
+    }
+
+    #[test]
+    fn test_btree_set_remove_take_pop() {
+        let mut set = CroBTreeSet::new();
+        set.insert(3);
+        set.insert(1);
+        set.insert(2);
+
+        assert_eq!(set.first(), Some(&1));
+        assert_eq!(set.last(), Some(&3));
+        assert_eq!(set.pop_first(), Some(1));
+        assert_eq!(set.pop_last(), Some(3));
+        assert!(set.contains(&2));
+        assert!(set.remove(&2));
+        assert!(set.is_empty());
+
+        set.insert(10);
+        assert_eq!(set.take(&10), Some(10));
+        assert!(set.is_empty());
+    }
+
+    #[test]
+    fn test_btree_set_ops_and_range() {
+        let mut a = CroBTreeSet::new();
+        let mut b = CroBTreeSet::new();
+        for value in [1, 2, 3, 4].iter() {
+            a.insert(*value);
+        }
+        for value in [3, 4, 5].iter() {
+            b.insert(*value);
+        }
+
+        let union: Vec<i32> = a.union(&b).cloned().collect();
+        assert_eq!(union, vec![1, 2, 3, 4, 5]);
+
+        let intersection: Vec<i32> = a.intersection(&b).cloned().collect();
+        assert_eq!(intersection, vec![3, 4]);
+
+        let difference: Vec<i32> = a.difference(&b).cloned().collect();
+        assert_eq!(difference, vec![1, 2]);
+
+        let sym: Vec<i32> = a.symmetric_difference(&b).cloned().collect();
+        assert_eq!(sym, vec![1, 2, 5]);
+
+        let range: Vec<i32> = a.range(2..=3).cloned().collect();
+        assert_eq!(range, vec![2, 3]);
     }
 }
