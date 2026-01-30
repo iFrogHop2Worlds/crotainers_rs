@@ -550,7 +550,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn test_insert_and_get() {
         let mut tree = CroBTree::new();
 
@@ -622,12 +621,7 @@ mod tests {
     fn test_smaller_insertion() {
         let mut tree = CroBTree::new();
         for i in 0..1000 {
-            println!(
-                "Inserting key: {}, tree state: {:?}",
-                i,
-                tree
-            );
-            tree.insert(i, i.to_string()).expect("TODO: panic message");
+            assert_eq!(tree.insert(i, i.to_string()), None);
         }
         assert_eq!(tree.len(), 1000);
     }
@@ -638,24 +632,14 @@ mod tests {
         let count:i32 = 1000;
 
         for i in 0..count {
-            println!(
-                "Inserting key: {}, tree state: {:?}",
-                i,
-                tree
-            );
-            tree.insert(i, i.to_string()).expect("TODO: panic message");
-            println!("Tree state after insertion: {:?}", tree);
+            assert_eq!(tree.insert(i, i.to_string()), None);
         }
 
         assert_eq!(tree.len(), count as usize);
 
         for i in 0..count {
-            // Print the actual values to see the difference
-            let stored = tree.get(&i);
-            println!("Stored value: {:?}", stored);
-            println!("Expected value: {:?}", Some(&i.to_string()));
-            println!("Checking {}", i);
-            assert_eq!(tree.get(&i), Some(&i.to_string()));
+            let expected = i.to_string();
+            assert_eq!(tree.get(&i), Some(&expected));
         }
     }
 

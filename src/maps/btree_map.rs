@@ -1,7 +1,7 @@
 use std::mem;
 use crate::sequences::CroVec;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct Node<K, V> {
     keys: CroVec<K>,
     values: CroVec<V>,
@@ -48,8 +48,8 @@ where
 
 impl<K, V> CroBTree<K, V>
 where
-    K: Ord + Clone, V: Clone,
-    V: Clone
+    K: Ord + Clone,
+    V: Clone,
 {
     pub fn new() -> Self {
         Self::with_order(6)
@@ -88,31 +88,8 @@ where
             let mut new_root = Node::new(false, self.order);
             let old_root = self.root.take().unwrap();
             new_root.children.push(old_root);
-
+            self.split_child(&mut new_root, 0);
             self.root = Some(new_root);
-
-            if let Some(root) = self.root.as_mut() {
-                let order = self.order;
-                let child = &mut root.children[0];
-                let mid = (order - 1) / 2;
-
-                let mut new_node = Node::new(child.is_leaf, order);
-
-                for _ in 0..(order - 1 - mid) {
-                    new_node.keys.push(child.keys.pop().unwrap());
-                    new_node.values.push(child.values.pop().unwrap());
-                }
-
-                if !child.is_leaf {
-                    for _ in 0..order - mid {
-                        new_node.children.push(child.children.pop().unwrap());
-                    }
-                }
-
-                root.keys.insert(0, child.keys.pop().unwrap());
-                root.values.insert(0, child.values.pop().unwrap());
-                root.children.insert(1, new_node);
-            }
         }
 
         let mut root = self.root.take().unwrap();
@@ -157,6 +134,9 @@ where
 
             if child.is_full(order) {
                 self.split_child(node, i);
+                if key == node.keys[i] {
+                    return Some(mem::replace(&mut node.values[i], value));
+                }
                 if key > node.keys[i] {
                     i += 1;
                 }
@@ -172,22 +152,17 @@ where
 
         let mut new_node = Node::new(child.is_leaf, self.order);
 
-        for i in (mid + 1)..child.keys.size() {
-            new_node.keys.push(child.keys[i].clone());
-            new_node.values.push(child.values[i].clone());
-        }
-
         while child.keys.size() > mid + 1 {
-            child.keys.pop();
-            child.values.pop();
+            let key = child.keys.pop().unwrap();
+            let value = child.values.pop().unwrap();
+            new_node.keys.insert(0, key);
+            new_node.values.insert(0, value);
         }
 
         if !child.is_leaf {
-            for i in (mid + 1)..child.children.size() {
-                new_node.children.push(child.children[i].clone());
-            }
             while child.children.size() > mid + 1 {
-                child.children.pop();
+                let moved_child = child.children.pop().unwrap();
+                new_node.children.insert(0, moved_child);
             }
         }
 

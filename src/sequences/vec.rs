@@ -75,6 +75,7 @@ impl<T> CroVec<T> {
                 std::ptr::copy(
                     self.data.add(index),
                     self.data.add(index + 1),
+                    self.size - index
                 );
             }
 
@@ -278,7 +279,6 @@ impl<T: PartialOrd> CroVec<T> {
         if self.size <= 1 {
             return;
         }
-
         // Allocate temporary buffer for merge sort
         let mut temp = CroVec::with_cap(self.size);
         unsafe {
