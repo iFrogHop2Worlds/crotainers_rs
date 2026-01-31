@@ -64,8 +64,7 @@ impl<T: std::fmt::Debug> CroQue<T> {
     pub fn push_front(&mut self, value: T) {
         self.debug_print("Before push_front");
         if self.buffer.cap() == self.buffer.size() {
-            let new_cap = if self.buffer.cap() == 0 { 1 } else { self.buffer.cap() * 2 };
-            self.buffer.reserve(new_cap);
+            self.buffer.reserve(1);
         }
 
         unsafe {

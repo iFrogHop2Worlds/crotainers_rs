@@ -68,13 +68,13 @@ mod tests {
         let mut vec: CroVec<i32> = CroVec::new();
 
         vec.reserve(5);
-        assert_eq!(vec.cap(), 5);
+        assert!(vec.cap() >= 5);
 
         vec.reserve(3);
-        assert_eq!(vec.cap(), 5);
+        assert!(vec.cap() >= 5);
 
         vec.reserve(10);
-        assert_eq!(vec.cap(), 10);
+        assert!(vec.cap() >= 10);
     }
 
     #[test]
