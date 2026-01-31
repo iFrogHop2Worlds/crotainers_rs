@@ -14,7 +14,7 @@ mod tests {
     };
 
     use crate::maps::{CroBTree, CroMap};
-    use crate::sets::CroBTreeSet;
+    use crate::sets::{CroBTreeSet, CroHashSet};
 
     #[test]
     fn test_new_crovec() {
@@ -522,6 +522,29 @@ mod tests {
         assert_eq!(map.get(&long_key), Some(&2));
     }
 
+    #[test]
+    fn test_map_borrowed_lookup() {
+        let mut map: CroMap<String, i32> = CroMap::new();
+        map.insert("alpha".to_string(), 1);
+        map.insert("beta".to_string(), 2);
+
+        assert_eq!(map.get("alpha"), Some(&1));
+        assert_eq!(map.get_key_value("beta").map(|(k, v)| (k.as_str(), *v)), Some(("beta", 2)));
+        assert_eq!(map.remove("alpha"), Some(1));
+        assert_eq!(map.get("alpha"), None);
+    }
+
+    #[test]
+    fn test_map_custom_hasher() {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::BuildHasherDefault;
+
+        let mut map: CroMap<i32, i32, BuildHasherDefault<DefaultHasher>> =
+            CroMap::with_hasher(BuildHasherDefault::default());
+        map.insert(1, 10);
+        assert_eq!(map.get(&1), Some(&10));
+    }
+
     //btreemap
     fn create_test_tree() -> CroBTree<i32, &'static str> {
         let mut tree = CroBTree::new();
@@ -751,5 +774,72 @@ mod tests {
 
         let range: Vec<i32> = a.range(2..=3).cloned().collect();
         assert_eq!(range, vec![2, 3]);
+    }
+
+    #[test]
+    fn test_hash_set_insert_contains_take() {
+        let mut set = CroHashSet::new();
+        assert!(set.is_empty());
+        assert!(set.insert("a"));
+        assert!(set.insert("b"));
+        assert!(!set.insert("a"));
+        assert!(set.contains(&"a"));
+        assert_eq!(set.get(&"b"), Some(&"b"));
+        assert_eq!(set.len(), 2);
+
+        assert_eq!(set.take(&"a"), Some("a"));
+        assert!(!set.contains(&"a"));
+        assert_eq!(set.len(), 1);
+    }
+
+    #[test]
+    fn test_hash_set_ops() {
+        let mut a = CroHashSet::new();
+        let mut b = CroHashSet::new();
+        for value in [1, 2, 3].iter() {
+            a.insert(*value);
+        }
+        for value in [3, 4].iter() {
+            b.insert(*value);
+        }
+
+        let mut union: Vec<i32> = a.union(&b).cloned().collect();
+        union.sort();
+        assert_eq!(union, vec![1, 2, 3, 4]);
+
+        let mut intersection: Vec<i32> = a.intersection(&b).cloned().collect();
+        intersection.sort();
+        assert_eq!(intersection, vec![3]);
+
+        let mut difference: Vec<i32> = a.difference(&b).cloned().collect();
+        difference.sort();
+        assert_eq!(difference, vec![1, 2]);
+
+        let mut sym: Vec<i32> = a.symmetric_difference(&b).cloned().collect();
+        sym.sort();
+        assert_eq!(sym, vec![1, 2, 4]);
+    }
+
+    #[test]
+    fn test_hash_set_borrowed_lookup() {
+        let mut set = CroHashSet::new();
+        set.insert(String::from("hello"));
+        set.insert(String::from("world"));
+
+        assert!(set.contains("hello"));
+        assert_eq!(set.get("world").map(|s| s.as_str()), Some("world"));
+        assert!(set.remove("hello"));
+        assert!(!set.contains("hello"));
+    }
+
+    #[test]
+    fn test_hash_set_custom_hasher() {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::BuildHasherDefault;
+
+        let mut set: CroHashSet<i32, BuildHasherDefault<DefaultHasher>> =
+            CroHashSet::with_hasher(BuildHasherDefault::default());
+        assert!(set.insert(1));
+        assert!(set.contains(&1));
     }
 }
