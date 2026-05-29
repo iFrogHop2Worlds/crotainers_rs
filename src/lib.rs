@@ -1,7 +1,7 @@
-mod etc;
-mod maps;
-mod sequences;
-mod sets;
+pub mod etc;
+pub mod maps;
+pub mod sequences;
+pub mod sets;
 
 
 #[cfg(test)]
