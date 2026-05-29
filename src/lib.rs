@@ -15,6 +15,7 @@ mod tests {
 
     use crate::maps::{CroBTree, CroMap};
     use crate::sets::{CroBTreeSet, CroHashSet};
+    use crate::etc::BinCroHeap;
 
     #[test]
     fn test_new_crovec() {
@@ -841,5 +842,58 @@ mod tests {
             CroHashSet::with_hasher(BuildHasherDefault::default());
         assert!(set.insert(1));
         assert!(set.contains(&1));
+    }
+
+    #[test]
+    fn test_bincro_heap_basic() {
+        let mut heap = BinCroHeap::new();
+        assert!(heap.is_empty());
+
+        heap.push(3);
+        heap.push(1);
+        heap.push(8);
+        heap.push(5);
+
+        assert_eq!(heap.peek(), Some(&8));
+        assert_eq!(heap.pop(), Some(8));
+        assert_eq!(heap.pop(), Some(5));
+        assert_eq!(heap.pop(), Some(3));
+        assert_eq!(heap.pop(), Some(1));
+        assert_eq!(heap.pop(), None);
+    }
+
+    #[test]
+    fn test_bincro_heap_from_crovec_heapify() {
+        let mut data = CroVec::new();
+        data.push(4);
+        data.push(10);
+        data.push(2);
+        data.push(7);
+        data.push(9);
+
+        let mut heap = BinCroHeap::from_crovec(data);
+        assert_eq!(heap.peek(), Some(&10));
+
+        let mut out = Vec::new();
+        while let Some(value) = heap.pop() {
+            out.push(value);
+        }
+
+        assert_eq!(out, vec![10, 9, 7, 4, 2]);
+    }
+
+    #[test]
+    fn test_bincro_heap_with_cap_and_wipe() {
+        let mut heap = BinCroHeap::with_cap(8);
+        assert_eq!(heap.cap(), 8);
+
+        heap.push(1);
+        heap.push(6);
+        heap.push(2);
+        assert_eq!(heap.size(), 3);
+
+        heap.wipe();
+        assert!(heap.is_empty());
+        assert_eq!(heap.pop(), None);
     }
 }

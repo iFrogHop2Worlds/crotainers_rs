@@ -619,7 +619,6 @@ impl<'a, T> Iterator for CroVecIterMut<'a, T> {
         (remaining, Some(remaining))
     }
 }
-
 impl<T> Iterator for CroVecIntoIter<T> {
     type Item = T;
 
